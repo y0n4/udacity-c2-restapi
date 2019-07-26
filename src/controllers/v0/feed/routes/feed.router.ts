@@ -29,7 +29,27 @@ router.patch('/:id',
     requireAuth, 
     async (req: Request, res: Response) => {
         //@TODO try it yourself
-        res.send(500).send("not implemented")
+        const { params: { id }, body: { caption, url } } = req;
+        if (id) {            
+            await FeedItem.findByPk(id)
+                .then((data) => {
+                    if (data === null) res.status(404).send('id does not exist');
+                    else {
+                        const { dataValues } = data;
+                        FeedItem.update({
+                            caption: caption || dataValues.caption,
+                            url: url || dataValues.url,
+                            createdAt: dataValues.createdAt,
+                        }, {
+                            where: { id },
+                            returning: true,
+                        })
+                        .then(([, [data] ]) => {
+                            res.send(dataValues);
+                        });
+                    }
+                })
+        } else res.status(400).send('id is required');
 });
 
 
