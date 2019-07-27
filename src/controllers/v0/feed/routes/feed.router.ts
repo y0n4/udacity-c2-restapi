@@ -10,6 +10,7 @@ router.get('/', async (req: Request, res: Response) => {
     const items = await FeedItem.findAndCountAll({order: [['id', 'DESC']]});
     items.rows.map((item) => {
             if(item.url) {
+                // takes key from database to get signedUrl from s3, to get file from s3
                 item.url = AWS.getGetSignedUrl(item.url);
             }
     });
