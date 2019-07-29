@@ -25,6 +25,7 @@ router.get('/', (req, res) => __awaiter(this, void 0, void 0, function* () {
     const items = yield FeedItem_1.FeedItem.findAndCountAll({ order: [['id', 'DESC']] });
     items.rows.map((item) => {
         if (item.url) {
+            // takes key from database to get signedUrl from s3, to get file from s3
             item.url = AWS.getGetSignedUrl(item.url);
         }
     });
@@ -39,7 +40,30 @@ router.get('/:id', (req, res) => __awaiter(this, void 0, void 0, function* () {
 // update a specific resource
 router.patch('/:id', auth_router_1.requireAuth, (req, res) => __awaiter(this, void 0, void 0, function* () {
     //@TODO try it yourself
-    res.send(500).send("not implemented");
+    const { params: { id }, body: { caption, url } } = req;
+    if (id) {
+        yield FeedItem_1.FeedItem.findByPk(id)
+            .then((data) => {
+            if (data === null)
+                res.status(404).send('id does not exist');
+            else {
+                const { dataValues } = data;
+                FeedItem_1.FeedItem.update({
+                    caption: caption || dataValues.caption,
+                    url: url || dataValues.url,
+                    createdAt: dataValues.createdAt,
+                }, {
+                    where: { id },
+                    returning: true,
+                })
+                    .then(([, [data]]) => {
+                    res.send(dataValues);
+                });
+            }
+        });
+    }
+    else
+        res.status(400).send('id is required');
 }));
 // Get a signed url to put a new item in the bucket
 router.get('/signed-url/:fileName', auth_router_1.requireAuth, (req, res) => __awaiter(this, void 0, void 0, function* () {
